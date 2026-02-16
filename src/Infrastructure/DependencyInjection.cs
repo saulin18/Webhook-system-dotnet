@@ -114,8 +114,8 @@ private static IServiceCollection AddWebhooks(this IServiceCollection services, 
     // HttpClient nombrado solo con Timeout (no BaseAddress: las URLs vienen de subscription.Url)
     services.AddHttpClient("Webhooks", (sp, client) => client.Timeout = TimeSpan.FromSeconds(configuration.GetValue<int>("Webhooks:TimeoutSeconds", 30)));
 
-    // WebhookDispatcher es Scoped porque usa ApplicationDbContext (scoped)
-    services.AddScoped<WebhookDispatcher>();
+        // WebhookDispatcher es Scoped porque usa ApplicationDbContext (scoped)
+        services.AddScoped<WebHookDispatcherMassTransit>();
         return services;
     }
 }

@@ -20,6 +20,7 @@ builder.Services
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
 
+
 WebApplication app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -47,6 +48,8 @@ app.UseAuthorization();
 app.MapEndpoints();
 
 app.MapControllers();
+
+
 
 await app.RunAsync();
 

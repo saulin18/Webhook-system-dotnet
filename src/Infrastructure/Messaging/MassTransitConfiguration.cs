@@ -1,3 +1,4 @@
+using Infrastructure.WebHookDispatcher;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,8 @@ public static class MassTransitConfiguration
         services.AddMassTransit(x => x.UsingRabbitMq((context, cfg) =>
         {
             IConfigurationSection rabbitMqConfig = configuration.GetSection("RabbitMQ");
+            x.AddConsumer<WebHookDispatcherConsumer>();
+            x.AddConsumer<WebHookTriggeredConsumer>();
             
             cfg.Host(rabbitMqConfig["Host"]!, h =>
             {

@@ -1,21 +1,20 @@
-﻿using Infrastructure.Authentication;
+﻿using System.Text.RegularExpressions;
+using Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.RegularExpressions;
 
 namespace Infrastructure.Authorization;
-
 
 internal sealed class PermissionAuthorizationHandler(IServiceScopeFactory serviceScopeFactory)
     : AuthorizationHandler<PermissionRequirement>
 {
-
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
-        PermissionRequirement requirement)
+        PermissionRequirement requirement
+    )
     {
         if (context.User is not { Identity.IsAuthenticated: true })
         {
@@ -36,8 +35,11 @@ internal sealed class PermissionAuthorizationHandler(IServiceScopeFactory servic
         Endpoint? endpoint = httpContext.GetEndpoint();
         string? endpointName = endpoint?.Metadata.GetMetadata<EndpointNameMetadata>()?.EndpointName;
 
-
-        string requiredPermission = PermissionsManager.BuildPermissionString(endpointName, requirement.Permission, userId);
+        string requiredPermission = PermissionsManager.BuildPermissionString(
+            endpointName,
+            requirement.Permission,
+            userId
+        );
 
         if (string.IsNullOrEmpty(requiredPermission))
         {
@@ -49,6 +51,4 @@ internal sealed class PermissionAuthorizationHandler(IServiceScopeFactory servic
             context.Succeed(requirement);
         }
     }
-
-
-}   
+}
