@@ -1,19 +1,17 @@
-using Domain.Users;
 using System;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Authorization;
 using Infrastructure.Authorization;
-
+using Microsoft.AspNetCore.Authorization;
 
 namespace Infrastructure.Authorization;
+
 public sealed class PermissionsManager
 {
-
     private static readonly Dictionary<string, Regex> Wildcards = new()
     {
         { "all", new Regex("^.+$") },
         { "read", new Regex("^(get|getbyid|list)$", RegexOptions.IgnoreCase) },
-        { "write", new Regex("^(create|post|update|put|delete)$", RegexOptions.IgnoreCase) }
+        { "write", new Regex("^(create|post|update|put|delete)$", RegexOptions.IgnoreCase) },
     };
 
     public static bool HasPermission(string requiredPermission, HashSet<string> userPermissions)
@@ -42,7 +40,7 @@ public sealed class PermissionsManager
         }
 
         string resource = parts[0].ToLower();
-        string action = parts[1].ToLower(); 
+        string action = parts[1].ToLower();
 
         string mappedAction = MapActionName(action);
 
@@ -53,6 +51,7 @@ public sealed class PermissionsManager
 
         return requiredPermission;
     }
+
     private static bool Match(string requiredPermission, string userPermission)
     {
         var requiredParts = requiredPermission.Split('.');
@@ -104,7 +103,7 @@ public sealed class PermissionsManager
             var action when action.StartsWith("create") || action.StartsWith("post") => "write",
             var action when action.StartsWith("update") || action.StartsWith("put") => "write",
             var action when action.StartsWith("delete") => "write",
-            _ => actionName.ToLower()
+            _ => actionName.ToLower(),
         };
     }
 }
