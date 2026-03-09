@@ -9,20 +9,25 @@ public static class MassTransitConfiguration
 {
     public static IServiceCollection AddMassTransit(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddMassTransit(x => x.UsingRabbitMq((context, cfg) =>
+        services.AddMassTransit(x =>
         {
-            IConfigurationSection rabbitMqConfig = configuration.GetSection("RabbitMQ");
             x.AddConsumer<WebHookDispatcherConsumer>();
             x.AddConsumer<WebHookTriggeredConsumer>();
-            
-            cfg.Host(rabbitMqConfig["Host"]!, h =>
-            {
-                h.Username(rabbitMqConfig["Username"]!);
-                h.Password(rabbitMqConfig["Password"]!);
-            });
 
-            cfg.ConfigureEndpoints(context);
-        }));
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                IConfigurationSection rabbitMqConfig = configuration.GetSection("RabbitMQ");
+                var host = rabbitMqConfig["Host"] ?? "localhost";
+                var port = rabbitMqConfig.GetValue<ushort?>("Port") ?? 5672;
+                cfg.Host(host, port, "/", h =>
+                {
+                    h.Username(rabbitMqConfig["Username"] ?? "guest");
+                    h.Password(rabbitMqConfig["Password"] ?? "guest");
+                });
+
+                cfg.ConfigureEndpoints(context);
+            });
+        });
 
         return services;
     }

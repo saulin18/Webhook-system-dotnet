@@ -13,7 +13,7 @@ using Microsoft.Extensions.Hosting;
 namespace Infrastructure.WebHookDispatcher;
 
 
-internal sealed class WebHookDispatcherMassTransit(
+public sealed class WebHookDispatcherMassTransit(
     IPublishEndpoint endpoint
 )
 {

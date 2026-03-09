@@ -29,12 +29,13 @@ internal sealed class WebHookDispatcherConsumer(ApplicationDbContext dbContext
         {
             await context.Publish(new WebHookTriggeredEvent(Message.EventType, subscription.Id,
             Message.Payload, subscription.Url, subscription.Secret));
-            
-          //  await context.PublishBatch( subscriptions.Select(subscription 
-          //  => new WebHookTriggeredEvent(Message.EventType, subscription.Id,
-          //  Message.Payload, subscription.Url)));
-        }    
+
+            //  await context.PublishBatch( subscriptions.Select(subscription 
+            //  => new WebHookTriggeredEvent(Message.EventType, subscription.Id,
+            //  Message.Payload, subscription.Url)));
+        }
     }
 }
 
-internal sealed record WebHookTriggeredEvent(string EventType, Guid SubscriptionId, object Payload, string WebHookUrl, string WebHookSecret);
+internal sealed record WebHookTriggeredEvent(string EventType, Guid SubscriptionId, object Payload,
+    string WebHookUrl, string WebHookSecret);

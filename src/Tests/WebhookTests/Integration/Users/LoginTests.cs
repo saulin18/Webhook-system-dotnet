@@ -11,7 +11,7 @@ namespace WebhookTests.Integration.Users;
 public sealed class LoginIntegrationTests : BaseIntegrationTest
 {
     private readonly string _endpoint = "users/login";
-    public LoginIntegrationTests(CustomWebApplicationFactory factory) : base(factory)
+    public LoginIntegrationTests(WebhookIntegrationFixture fixture) : base(fixture)
     {
     }
 

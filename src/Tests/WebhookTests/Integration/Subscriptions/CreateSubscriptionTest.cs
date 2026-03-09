@@ -23,7 +23,7 @@ public sealed class CreateSubscriptionTest : BaseIntegrationTest
 
     private readonly string _endpoint = "webhooks/subscriptions";
 
-    public CreateSubscriptionTest(CustomWebApplicationFactory factory) : base(factory)
+    public CreateSubscriptionTest(WebhookIntegrationFixture fixture) : base(fixture)
     {
 
     }
