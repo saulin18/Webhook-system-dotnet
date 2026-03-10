@@ -30,14 +30,17 @@ public static class SeedingUtils
         await db.SaveChangesAsync();
     }
 
-    public static List<WebhookSubscription> GetSeedingWebhookSubscriptions(Guid userId)
+    public static List<WebhookSubscription> GetSeedingWebhookSubscriptions(Guid? userId)
     {
-        return new List<WebhookSubscription>()
-        {
+
+        var id = userId is null ? Guid.NewGuid() : (Guid)userId;
+
+        return
+        [
             new WebhookSubscription
             {
                 Id = Guid.NewGuid(),
-                UserId = userId,
+                UserId = id,
                 Url = "https://example.com/webhook",
                 EventType = "test",
                 IsActive = true,
@@ -47,7 +50,7 @@ public static class SeedingUtils
             new WebhookSubscription
             {
                 Id = Guid.NewGuid(),
-                UserId = userId,
+                UserId = id,
                 Url = "https://example.com/webhook2",
                 EventType = "test2",
                 IsActive = true,
@@ -57,14 +60,14 @@ public static class SeedingUtils
             new WebhookSubscription
             {
                 Id = Guid.NewGuid(),
-                UserId = userId,
+                UserId = id,
                 Url = "https://example.com/webhook3",
                 EventType = "test3",
                 IsActive = true,
                 Secret = GenerateSecret(),
                 CreatedAt = DateTime.UtcNow
             }
-        };
+        ];
     }
 
     public static User SeedUser(ApplicationDbContext context, IPasswordHasher passwordHasher, string Email, 

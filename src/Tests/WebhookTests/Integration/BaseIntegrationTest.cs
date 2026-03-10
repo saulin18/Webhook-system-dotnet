@@ -11,19 +11,24 @@ using Microsoft.EntityFrameworkCore;
 using Application.Abstractions.Authentication;
 using System.Net.Http.Headers;
 
-
-
 namespace WebhookTests.Integration;
 
-public abstract class BaseIntegrationTest : IClassFixture<CustomWebApplicationFactory>, IDisposable
+/// <summary>
+/// Base for integration tests. Uses the shared factory from the fixture (same containers and app for all tests).
+/// Each test gets its own Client, Scope, and DbContext, and starts with an empty DB (EnsureDeleted + Migrate).
+/// </summary>
+[Collection("WebhookIntegration")]
+public abstract class BaseIntegrationTest : IDisposable
 {
     protected readonly HttpClient Client;
     protected readonly IServiceScope Scope;
     protected readonly ApplicationDbContext DbContext;
 
-    protected BaseIntegrationTest(CustomWebApplicationFactory factory)
+    protected BaseIntegrationTest(WebhookIntegrationFixture fixture)
     {
+        CustomWebApplicationFactory factory = fixture.Factory;
         Client = factory.CreateClient();
+        factory.RegisterForTestServerHandler();
         Scope = factory.Server.Services.CreateScope();
 
         DbContext = Scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

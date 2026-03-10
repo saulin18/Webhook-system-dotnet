@@ -12,8 +12,8 @@ public sealed class DeleteSubscriptionTest : BaseIntegrationTest
 {
     private readonly string endpoint = "webhooks/subscriptions/{id}";
 
-    public DeleteSubscriptionTest(CustomWebApplicationFactory factory)
-        : base(factory) { }
+    public DeleteSubscriptionTest(WebhookIntegrationFixture fixture)
+        : base(fixture) { }
 
     [Fact]
     public async Task DeleteSubscription_WithValidData_ReturnsSuccess()

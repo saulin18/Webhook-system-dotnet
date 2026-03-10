@@ -16,7 +16,7 @@ namespace WebhookTests.Integration.Users;
 public sealed class SignUpEndpointTests : BaseIntegrationTest
 {
     private readonly string _endpoint = "users/register";
-    public SignUpEndpointTests(CustomWebApplicationFactory factory) : base(factory)
+    public SignUpEndpointTests(WebhookIntegrationFixture fixture) : base(fixture)
     {
     }
 
@@ -35,8 +35,6 @@ public sealed class SignUpEndpointTests : BaseIntegrationTest
         HttpResponseMessage response = await Client.PostAsJsonAsync(_endpoint, requestBody);
 
         response.EnsureSuccessStatusCode();
-
-
 
         User? userInDb = await DbContext.Users.SingleOrDefaultAsync(user => user.Email == requestBody.Email);
 

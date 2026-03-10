@@ -21,7 +21,7 @@ public sealed class GetSubscriptionsTest : BaseIntegrationTest
 {
     private readonly string _endpoint = "webhooks/subscriptions";
     private readonly string _detailEndpoint = "webhooks/subscriptions/{id}";
-    public GetSubscriptionsTest(CustomWebApplicationFactory factory) : base(factory)
+    public GetSubscriptionsTest(WebhookIntegrationFixture fixture) : base(fixture)
     {
     }
 
