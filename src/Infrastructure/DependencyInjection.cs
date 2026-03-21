@@ -18,6 +18,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using SharedKernel;
+using Polly;
+using Polly.Extensions.Http;
+using Infrastructure.WebHooDispatcher;
 
 namespace Infrastructure;
 
@@ -60,7 +63,7 @@ public static class DependencyInjection
     private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
     {
         IHealthChecksBuilder healthChecksBuilder = services.AddHealthChecks();
-        
+
         string? connectionString = configuration.GetConnectionString("Database");
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
@@ -84,7 +87,7 @@ public static class DependencyInjection
                     ValidIssuer = configuration["Jwt:Issuer"],
                     ValidAudience = configuration["Jwt:Audience"],
                     ClockSkew = TimeSpan.Zero
-        
+
                 };
             });
 
@@ -109,13 +112,24 @@ public static class DependencyInjection
         return services;
     }
 
+    private static IAsyncPolicy<HttpResponseMessage> AddRetryPolicy()
+    {
+        return HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
+            .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
+                                                                        retryAttempt)));
+    }
+
 private static IServiceCollection AddWebhooks(this IServiceCollection services, IConfiguration configuration)
 {
-    // HttpClient nombrado solo con Timeout (no BaseAddress: las URLs vienen de subscription.Url)
-    services.AddHttpClient("Webhooks", (sp, client) => client.Timeout = TimeSpan.FromSeconds(configuration.GetValue<int>("Webhooks:TimeoutSeconds", 30)));
+    var retryPolicy = AddRetryPolicy();
+    services.AddHttpClient<WebhooksHttpClient>("Webhooks", (sp, client) =>
+            client.Timeout = TimeSpan.FromSeconds(configuration.GetValue<int>("Webhooks:TimeoutSeconds", 30)))
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(retryPolicy);
 
-        // WebhookDispatcher es Scoped porque usa ApplicationDbContext (scoped)
-        services.AddScoped<WebHookDispatcherMassTransit>();
-        return services;
-    }
+    services.AddScoped<WebHookDispatcherMassTransit>();
+    return services;
+}
 }

@@ -12,7 +12,6 @@ using Microsoft.Extensions.Hosting;
 
 namespace Infrastructure.WebHookDispatcher;
 
-
 public sealed class WebHookDispatcherMassTransit(
     IPublishEndpoint endpoint
 )

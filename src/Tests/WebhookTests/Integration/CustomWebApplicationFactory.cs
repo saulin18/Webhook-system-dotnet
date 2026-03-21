@@ -34,7 +34,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             .WithPortBinding(5433, true)
             .Build();
 
-        RabbitMqContainer = new RabbitMqBuilder()
+        RabbitMqContainer = new RabbitMqBuilder("rabbitmq:3")
             .WithImage("rabbitmq:3-management")
             .WithUsername(RabbitUser)
             .WithPassword(RabbitPass)
@@ -48,9 +48,17 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
     public new async Task DisposeAsync()
     {
         if (RabbitMqContainer is not null)
+        {
             await RabbitMqContainer.DisposeAsync();
+        }
+
+
         if (PostgresContainer is not null)
+        {
             await PostgresContainer.DisposeAsync();
+        }
+
+
         await base.DisposeAsync();
     }
 
@@ -78,10 +86,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             config.AddEnvironmentVariables();
         });
 
-        builder.ConfigureTestServices(services =>
-        {
-            services.AddHttpClient("Webhooks").ConfigurePrimaryHttpMessageHandler(GetTestServerHandler);
-        });
+        builder.ConfigureTestServices(services => services.AddHttpClient("Webhooks").ConfigurePrimaryHttpMessageHandler(GetTestServerHandler));
 
         builder.UseUrls($"http://localhost:{TestServerPort}");
         builder.UseEnvironment("Testing");
