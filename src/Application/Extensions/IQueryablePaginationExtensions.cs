@@ -29,13 +29,13 @@ public interface ICursorPagedResult<T>
     int PageSize { get; }
 }
 
-public sealed record CursorPagedResult<T>(List<T> Items, string? NextCursor, string? PreviousCursor, 
+public sealed record CursorPagedResult<T>(List<T> Items, string? NextCursor, string? PreviousCursor,
 bool HasNextPage, bool HasPreviousPage, int PageSize) : ICursorPagedResult<T>;
 
 public sealed record PagedResult<T>(List<T> Items, int TotalCount, int Page, int PageSize) : IPagedResult<T>;
 
 public static class QueryableExtensions
-{   
+{
     //Offset pagination just in case
     public static async Task<PagedResult<T>> ToPagedResultAsync<T>(
         this IQueryable<T> query,
@@ -54,125 +54,125 @@ public static class QueryableExtensions
         (items, totalCount, page, pageSize);
     }
 
-public static async Task<CursorPagedResult<T>> ToCursorPagedResultAsync<T, TKey>(
-    this IQueryable<T> query,
-    Expression<Func<T, TKey>> keySelector,
-    string? cursor,
-    int pageSize,
-    PaginationDirection direction = PaginationDirection.Forward,
-    CancellationToken cancellationToken = default) where TKey : IComparable<TKey>
-{
-    try
+    public static async Task<CursorPagedResult<T>> ToCursorPagedResultAsync<T, TKey>(
+        this IQueryable<T> query,
+        Expression<Func<T, TKey>> keySelector,
+        string? cursor,
+        int pageSize,
+        PaginationDirection direction = PaginationDirection.Forward,
+        CancellationToken cancellationToken = default) where TKey : IComparable<TKey>
     {
-        Log.Information($"[Pagination] Starting pagination with cursor: '{cursor}', pageSize: {pageSize}, direction: {direction}");
-        
-        List<T> items = [];
-        string? nextCursor = null;
-        string? previousCursor = null;
-
-        if (!string.IsNullOrEmpty(cursor))
+        try
         {
-            Log.Information($"[Pagination] Processing cursor: {cursor}");
-            TKey cursorValue = DecodeCursor<TKey>(cursor);
-            Log.Information($"[Pagination] Decoded cursor value: {cursorValue}");
-            
-            if (direction == PaginationDirection.Forward)
-            {
-                query = query.Where(CreateGreaterThanExpression(keySelector, cursorValue));
-                Log.Information($"[Pagination] Applied forward filter");
-            }
-            else
-            {
-                query = query.Where(CreateLessThanExpression(keySelector, cursorValue));
-                Log.Information($"[Pagination] Applied backward filter");
-            }
-        }
+            Log.Information($"[Pagination] Starting pagination with cursor: '{cursor}', pageSize: {pageSize}, direction: {direction}");
 
-        // Check if the query already has an order applied
+            List<T> items = [];
+            string? nextCursor = null;
+            string? previousCursor = null;
+
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                Log.Information($"[Pagination] Processing cursor: {cursor}");
+                TKey cursorValue = DecodeCursor<TKey>(cursor);
+                Log.Information($"[Pagination] Decoded cursor value: {cursorValue}");
+
+                if (direction == PaginationDirection.Forward)
+                {
+                    query = query.Where(CreateGreaterThanExpression(keySelector, cursorValue));
+                    Log.Information($"[Pagination] Applied forward filter");
+                }
+                else
+                {
+                    query = query.Where(CreateLessThanExpression(keySelector, cursorValue));
+                    Log.Information($"[Pagination] Applied backward filter");
+                }
+            }
+
+            // Check if the query already has an order applied
             bool hasExistingOrder = HasExistingOrder(query);
-        
-        if (direction == PaginationDirection.Forward)
-        {
-            if (!hasExistingOrder)
-            {
-                query = query.OrderBy(keySelector);
-                Log.Information($"[Pagination] Applied forward ordering");
-            }
-            else
-            {
-                Log.Information($"[Pagination] Order already applied, preserving existing order");
-            }
-        }
-        else
-        {
-            if (!hasExistingOrder)
-            {
-                query = query.OrderByDescending(keySelector);
-                Log.Information($"[Pagination] Applied backward ordering");
-            }
-            else
-            {
-                Log.Information($"[Pagination] Order already applied, preserving existing order");
-            }
-        }
 
-        // Get one extra item to check if there's a next page
-        Log.Information($"[Pagination] Executing query with Take({pageSize + 1})");
-        items = await query.Take(pageSize + 1).ToListAsync(cancellationToken);
-        Log.Information($"[Pagination] Retrieved {items.Count} items");
-
-        bool hasNextPage = items.Count > pageSize;
-        bool hasPreviousPage = !string.IsNullOrEmpty(cursor);
-
-        if (hasNextPage)
-        {
-            items.RemoveAt(items.Count - 1); // Remove the extra item
-            Log.Information($"[Pagination] Removed extra item, final count: {items.Count}");
-        }
-
-        if (items.Any())
-        {
-                Func<T, TKey> keyCompiled = keySelector.Compile();
-            
             if (direction == PaginationDirection.Forward)
             {
-                nextCursor = hasNextPage ? EncodeCursor(keyCompiled(items.Last())) : null;
-                previousCursor = hasPreviousPage ? EncodeCursor(keyCompiled(items.First())) : null;
+                if (!hasExistingOrder)
+                {
+                    query = query.OrderBy(keySelector);
+                    Log.Information($"[Pagination] Applied forward ordering");
+                }
+                else
+                {
+                    Log.Information($"[Pagination] Order already applied, preserving existing order");
+                }
             }
             else
             {
-                // For backward pagination, reverse the items and cursors
-                items.Reverse();
-                nextCursor = hasPreviousPage ? EncodeCursor(keyCompiled(items.Last())) : null;
-                previousCursor = hasNextPage ? EncodeCursor(keyCompiled(items.First())) : null;
+                if (!hasExistingOrder)
+                {
+                    query = query.OrderByDescending(keySelector);
+                    Log.Information($"[Pagination] Applied backward ordering");
+                }
+                else
+                {
+                    Log.Information($"[Pagination] Order already applied, preserving existing order");
+                }
             }
-            
-            Log.Information($"[Pagination] Generated cursors - Next: {nextCursor}, Previous: {previousCursor}");
+
+            // Get one extra item to check if there's a next page
+            Log.Information($"[Pagination] Executing query with Take({pageSize + 1})");
+            items = await query.Take(pageSize + 1).ToListAsync(cancellationToken);
+            Log.Information($"[Pagination] Retrieved {items.Count} items");
+
+            bool hasNextPage = items.Count > pageSize;
+            bool hasPreviousPage = !string.IsNullOrEmpty(cursor);
+
+            if (hasNextPage)
+            {
+                items.RemoveAt(items.Count - 1); // Remove the extra item
+                Log.Information($"[Pagination] Removed extra item, final count: {items.Count}");
+            }
+
+            if (items.Any())
+            {
+                Func<T, TKey> keyCompiled = keySelector.Compile();
+
+                if (direction == PaginationDirection.Forward)
+                {
+                    nextCursor = hasNextPage ? EncodeCursor(keyCompiled(items.Last())) : null;
+                    previousCursor = hasPreviousPage ? EncodeCursor(keyCompiled(items.First())) : null;
+                }
+                else
+                {
+                    // For backward pagination, reverse the items and cursors
+                    items.Reverse();
+                    nextCursor = hasPreviousPage ? EncodeCursor(keyCompiled(items.Last())) : null;
+                    previousCursor = hasNextPage ? EncodeCursor(keyCompiled(items.First())) : null;
+                }
+
+                Log.Information($"[Pagination] Generated cursors - Next: {nextCursor}, Previous: {previousCursor}");
+            }
+
+            var result = new CursorPagedResult<T>
+            (items, nextCursor, previousCursor, hasNextPage, hasPreviousPage, pageSize);
+
+            Log.Information($"[Pagination] Pagination completed successfully. Items: {items.Count}, HasNext: {hasNextPage}, HasPrevious: {hasPreviousPage}");
+            return result;
         }
-
-        var result = new CursorPagedResult<T>
-        (items, nextCursor, previousCursor, hasNextPage, hasPreviousPage, pageSize);
-        
-        Log.Information($"[Pagination] Pagination completed successfully. Items: {items.Count}, HasNext: {hasNextPage}, HasPrevious: {hasPreviousPage}");
-        return result;
+        catch (Exception ex)
+        {
+            Log.Information($"[Pagination] ERROR in ToCursorPagedResultAsync: {ex.Message}");
+            Log.Information($"[Pagination] Stack trace: {ex.StackTrace}");
+            throw;
+        }
     }
-    catch (Exception ex)
-    {
-        Log.Information($"[Pagination] ERROR in ToCursorPagedResultAsync: {ex.Message}");
-        Log.Information($"[Pagination] Stack trace: {ex.StackTrace}");
-        throw;
-    }
-}
 
- 
+
     private static bool HasExistingOrder<T>(IQueryable<T> query)
     {
         try
         {
-            
+
             Expression expression = query.Expression;
-            
-            if (expression.Type.IsGenericType && 
+
+            if (expression.Type.IsGenericType &&
                 expression.Type.GetGenericTypeDefinition() == typeof(IOrderedQueryable<>))
             {
                 Log.Information($"[Pagination] Detected IOrderedQueryable type: {expression.Type}");
@@ -181,12 +181,12 @@ public static async Task<CursorPagedResult<T>> ToCursorPagedResultAsync<T, TKey>
 
             string expressionString = expression.ToString();
             bool hasOrderBy = expressionString.Contains("OrderBy") || expressionString.Contains("OrderByDescending");
-            
+
             if (hasOrderBy)
             {
                 Log.Information($"[Pagination] Detected OrderBy in expression: {expressionString}");
             }
-            
+
             return hasOrderBy;
         }
         catch (Exception ex)
@@ -203,7 +203,7 @@ public static async Task<CursorPagedResult<T>> ToCursorPagedResultAsync<T, TKey>
         Expression property = keySelector.Body;
         ConstantExpression constant = Expression.Constant(value, typeof(TKey));
         BinaryExpression greaterThan = Expression.GreaterThan(property, constant);
-        
+
         return Expression.Lambda<Func<T, bool>>(greaterThan, parameter);
     }
 
@@ -214,7 +214,7 @@ public static async Task<CursorPagedResult<T>> ToCursorPagedResultAsync<T, TKey>
         Expression property = keySelector.Body;
         ConstantExpression constant = Expression.Constant(value, typeof(TKey));
         BinaryExpression lessThan = Expression.LessThan(property, constant);
-        
+
         return Expression.Lambda<Func<T, bool>>(lessThan, parameter);
     }
 

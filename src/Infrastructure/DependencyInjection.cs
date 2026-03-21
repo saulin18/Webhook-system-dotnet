@@ -117,19 +117,27 @@ public static class DependencyInjection
         return HttpPolicyExtensions
             .HandleTransientHttpError()
             .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
-            .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
-                                                                        retryAttempt)));
+            .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
     }
 
-private static IServiceCollection AddWebhooks(this IServiceCollection services, IConfiguration configuration)
-{
-    var retryPolicy = AddRetryPolicy();
-    services.AddHttpClient<WebhooksHttpClient>("Webhooks", (sp, client) =>
-            client.Timeout = TimeSpan.FromSeconds(configuration.GetValue<int>("Webhooks:TimeoutSeconds", 30)))
-        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-        .AddPolicyHandler(retryPolicy);
+    private static IAsyncPolicy<HttpResponseMessage> AddCircuitBreaker()
+    {
+        return HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
+    }
 
-    services.AddScoped<WebHookDispatcherMassTransit>();
-    return services;
-}
+    private static IServiceCollection AddWebhooks(this IServiceCollection services, IConfiguration configuration)
+    {
+        var retryPolicy = AddRetryPolicy();
+        var circuitBreaker = AddCircuitBreaker();
+        services.AddHttpClient<WebhooksHttpClient>("Webhooks", (sp, client) =>
+                client.Timeout = TimeSpan.FromSeconds(configuration.GetValue<int>("Webhooks:TimeoutSeconds", 30)))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+            .AddPolicyHandler(retryPolicy)
+            .AddPolicyHandler(circuitBreaker);
+
+        services.AddScoped<WebHookDispatcherMassTransit>();
+        return services;
+    }
 }
