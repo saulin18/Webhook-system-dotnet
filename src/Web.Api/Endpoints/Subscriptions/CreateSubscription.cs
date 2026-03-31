@@ -1,12 +1,15 @@
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Authentication;
 using Application.Webhooks.CreateSubscription;
+using Application.WebhookSubscriptions.Create;
+using Domain.Users;
+using Infrastructure.Authorization;
 using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
-using System;
 
-namespace Web.Api.Endpoints.Webhooks;
+
+namespace Web.Api.Endpoints.Subscriptions;
 
 internal sealed class CreateSubscription : IEndpoint
 {
@@ -14,7 +17,7 @@ internal sealed class CreateSubscription : IEndpoint
     {
         app.MapPost("webhooks/subscriptions", async (
             IUserContext userContext,
-            CreateSubscriptionRequest request,
+            CreateSubscriptionCommand request,
             ICommandHandler<CreateSubscriptionCommand, CreateSubscriptionResponseDto> handler,
             CancellationToken cancellationToken) =>
         {
@@ -25,8 +28,10 @@ internal sealed class CreateSubscription : IEndpoint
             return result.Match(Results.Ok, CustomResults.Problem);
         })
         .WithTags(Tags.Webhooks)
-        .RequireAuthorization();
+        .WithName("subscriptions.create")
+        .WithMetadata(new EndpointRequirementMetadata(Permission.WriteTheirOwnWebhooks))
+        .RequireAuthorization(Permission.WriteTheirOwnWebhooks);
     }
 
-    private sealed record CreateSubscriptionRequest(Uri Url, string EventType);
+ 
 }

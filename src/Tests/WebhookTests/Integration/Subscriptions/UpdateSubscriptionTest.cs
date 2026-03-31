@@ -1,8 +1,5 @@
 using Xunit;
 using Domain.Webhooks;
-using WebhookTests;
-using SharedKernel;
-using Application.Webhooks.Update;
 using Domain.Users;
 using System.Net.Http.Json;
 using Application.Webhooks;
@@ -20,7 +17,7 @@ public sealed class UpdateSubscriptionTest : BaseIntegrationTest
     [Fact]
     public async Task UpdateSubscription_WithValidData_ReturnsSuccess()
     {
-        var (token, user) = await GetUserToken(UserRole.User);
+        var (token, user) = await GetUserToken(Role: UserRole.User);
         SetupHttpClientWithToken(token);
 
         WebhookSubscription subscription = await SeedingUtils.SeedSubscription
@@ -43,7 +40,7 @@ public sealed class UpdateSubscriptionTest : BaseIntegrationTest
     [Fact]
     public async Task UpdateSubscription_WithInvalidData_ReturnsBadRequest()
     {
-        var (token, user) = await GetUserToken(UserRole.User);
+        var (token, user) = await GetUserToken(Role: UserRole.User);
         SetupHttpClientWithToken(token);
 
         WebhookSubscription subscription = await SeedingUtils.SeedSubscription

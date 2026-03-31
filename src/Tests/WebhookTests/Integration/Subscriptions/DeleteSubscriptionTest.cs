@@ -2,35 +2,30 @@ using System.Net.Http.Json;
 using Application.Webhooks.Delete;
 using Domain.Users;
 using Domain.Webhooks;
-using SharedKernel;
-using WebhookTests;
 using Xunit;
 
-namespace WebhookTests.Integration;
+namespace WebhookTests.Integration.Subscriptions;
 
-public sealed class DeleteSubscriptionTest : BaseIntegrationTest
+public sealed class DeleteSubscriptionTest(WebhookIntegrationFixture fixture) : BaseIntegrationTest(fixture)
 {
-    private readonly string endpoint = "webhooks/subscriptions/{id}";
-
-    public DeleteSubscriptionTest(WebhookIntegrationFixture fixture)
-        : base(fixture) { }
+    private readonly string _endpoint = "webhooks/subscriptions/{id}";
 
     [Fact]
     public async Task DeleteSubscription_WithValidData_ReturnsSuccess()
     {
-        var (token, user) = await GetUserToken(UserRole.User);
+        var (token, user) = await GetUserToken(Role: UserRole.User);
         SetupHttpClientWithToken(token);
-        var subscription = await SeedingUtils.SeedSubscription(
+        WebhookSubscription subscription = await SeedingUtils.SeedSubscription(
             DbContext,
             SeedingUtils.GetSeedingWebhookSubscriptions(user.Id)[0]
         );
 
-        var response = await Client.DeleteAsync(
-            endpoint.Replace("{id}", subscription.Id.ToString())
+        HttpResponseMessage response = await Client.DeleteAsync(
+            _endpoint.Replace("{id}", subscription.Id.ToString())
         );
         response.EnsureSuccessStatusCode();
         Assert.True(response.IsSuccessStatusCode);
-        var responseBody =
+        DeleteSubscriptionResponseDto? responseBody =
             await response.Content.ReadFromJsonAsync<DeleteSubscriptionResponseDto>();
         Assert.NotNull(responseBody);
         Assert.Equal(subscription.Id, responseBody.Id);
@@ -39,12 +34,12 @@ public sealed class DeleteSubscriptionTest : BaseIntegrationTest
     [Fact]
     public async Task DeleteSubscription_WithInvalidId_Returns404()
     {
-        var (token, user) = await GetUserToken(UserRole.User);
+        var (token, user) = await GetUserToken(Role: UserRole.User);
         SetupHttpClientWithToken(token);
-        var subscription = SeedingUtils.GetSeedingWebhookSubscriptions(user.Id)[0];
+        WebhookSubscription subscription = SeedingUtils.GetSeedingWebhookSubscriptions(user.Id)[0];
 
-        var response = await Client.DeleteAsync(
-            endpoint.Replace("{id}", subscription.Id.ToString())
+        HttpResponseMessage response = await Client.DeleteAsync(
+            _endpoint.Replace("{id}", subscription.Id.ToString())
         );
         Assert.False(response.IsSuccessStatusCode);
         Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);

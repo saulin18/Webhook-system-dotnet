@@ -15,6 +15,7 @@ internal sealed class WebHookTriggeredConsumer(
 {
     public async Task Consume(ConsumeContext<WebHookTriggeredEvent> context)
     {
+    
         var message = context.Message;
 
         var client = httpClientFactory.CreateClient("Webhooks");

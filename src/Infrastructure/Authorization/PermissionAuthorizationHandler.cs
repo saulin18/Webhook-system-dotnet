@@ -1,9 +1,8 @@
-﻿using System.Text.RegularExpressions;
+
 using Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Routing;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Authorization;
@@ -22,7 +21,7 @@ internal sealed class PermissionAuthorizationHandler(IServiceScopeFactory servic
         }
 
         using IServiceScope scope = serviceScopeFactory.CreateScope();
-        var permissionProvider = scope.ServiceProvider.GetRequiredService<PermissionProvider>();
+        PermissionProvider permissionProvider = scope.ServiceProvider.GetRequiredService<PermissionProvider>();
 
         Guid userId = context.User.GetUserId();
         HashSet<string> userPermissions = await permissionProvider.GetForUserIdAsync(userId);
@@ -33,10 +32,12 @@ internal sealed class PermissionAuthorizationHandler(IServiceScopeFactory servic
         }
 
         Endpoint? endpoint = httpContext.GetEndpoint();
-        string? endpointName = endpoint?.Metadata.GetMetadata<EndpointNameMetadata>()?.EndpointName;
-
+        //We can't use the endpoint name since this needs to be unique but the permissions
+        //is something that can be shared between endpoints.
+        //string? endpointRequirement = endpoint?.Metadata.GetMetadata<endpointRequirementMetadata>()?.endpointRequirement;
+        string? endpointRequirement = endpoint?.Metadata.GetRequiredMetadata<EndpointRequirementMetadata>().EndpointRequirement; 
         string requiredPermission = PermissionsManager.BuildPermissionString(
-            endpointName,
+            endpointRequirement ?? string.Empty,
             requirement.Permission,
             userId
         );

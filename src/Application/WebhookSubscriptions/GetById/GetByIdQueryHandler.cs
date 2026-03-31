@@ -1,11 +1,12 @@
-using Application.Abstractions.Messaging;
-using Application.Abstractions.Data;
-using Domain.Webhooks;
-using SharedKernel;
-using Microsoft.EntityFrameworkCore;
 using Application.Abstractions.Authentication;
+using Application.Abstractions.Data;
+using Application.Abstractions.Messaging;
+using Application.Webhooks.GetById;
+using Domain.Webhooks;
+using Microsoft.EntityFrameworkCore;
+using SharedKernel;
 
-namespace Application.Webhooks.GetById;
+namespace Application.WebhookSubscriptions.GetById;
 
 internal sealed class GetByIdQueryHandler(IApplicationDbContext context, IUserContext userContext)
     : IQueryHandler<GetByIdQuery, GetByIdResponseDto>

@@ -4,8 +4,9 @@ using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 using Domain.Users;
+using Infrastructure.Authorization;
 
-namespace Web.Api.Endpoints.Webhooks;
+namespace Web.Api.Endpoints.Subscriptions;
 
 internal sealed class DeleteSubscription : IEndpoint
 {
@@ -22,7 +23,8 @@ internal sealed class DeleteSubscription : IEndpoint
             return result.Match(Results.Ok, CustomResults.Problem);
         })
         .WithTags(Tags.Webhooks)
-        .WithName(Permission.WebhooksDelete)
+        .WithName("subscriptions.delete")
+        .WithMetadata(new EndpointRequirementMetadata(Permission.WriteTheirOwnWebhooks))
         .RequireAuthorization(Permission.WriteTheirOwnWebhooks);
     }
 }

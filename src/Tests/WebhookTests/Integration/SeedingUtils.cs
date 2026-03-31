@@ -2,38 +2,20 @@ using Domain.Webhooks;
 using Infrastructure.Database;
 using System.Security.Cryptography;
 using Domain.Users;
-using Microsoft.EntityFrameworkCore;
-using Application.Abstractions.Authentication;
-using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
+using Application.Abstractions.Authentication;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace WebhookTests.Integration;
 
 public static class SeedingUtils
 {
-    public static async Task InitializeDbForTests(ApplicationDbContext db, Guid userId)
-    {
-        db.WebhookSubscriptions.AddRange(GetSeedingWebhookSubscriptions(userId));
-        await db.SaveChangesAsync();
-    }
-
-    public static async Task ReinitializeDbForTests(ApplicationDbContext db, Guid userId)
-    {
-        db.WebhookSubscriptions.RemoveRange(db.WebhookSubscriptions);
-        await db.SaveChangesAsync();
-        await InitializeDbForTests(db, userId);
-    }
-
-    public static async Task AddUserToDb(ApplicationDbContext db, User user)
-    {
-        db.Users.Add(user);
-        await db.SaveChangesAsync();
-    }
 
     public static List<WebhookSubscription> GetSeedingWebhookSubscriptions(Guid? userId)
     {
 
-        var id = userId is null ? Guid.NewGuid() : (Guid)userId;
+        Guid id = userId ?? Guid.NewGuid();
 
         return
         [
@@ -70,14 +52,14 @@ public static class SeedingUtils
         ];
     }
 
-    public static User SeedUser(ApplicationDbContext context, IPasswordHasher passwordHasher, string Email, 
-    string Firstname, string LastName, string Password, UserRole Role)
+    public static User SeedUser(ApplicationDbContext context, IPasswordHasher passwordHasher, string Email,
+    string FirstName, string LastName, string Password, UserRole Role)
     {
 
-        var user = context.Users.Add(new User
+        EntityEntry<User> user = context.Users.Add(new User
         {
             Email = Email,
-            FirstName = Firstname,
+            FirstName = FirstName,
             LastName = LastName,
             PasswordHash = passwordHasher.Hash(Password),
             Role = Role
@@ -106,7 +88,7 @@ public static class SeedingUtils
 
         // Deserializar el token como JSON string (ASP.NET Core serializa strings con comillas)
         string? token = await response.Content.ReadFromJsonAsync<string>();
-        
+
         if (string.IsNullOrEmpty(token))
         {
             throw new InvalidOperationException("Failed to retrieve token from login response");
@@ -115,6 +97,48 @@ public static class SeedingUtils
         return token;
     }
 
+
+    public static async Task<Tuple<WebhookSubscription, List<WebhookDelivery>>> SeedWebhookDeliveries(ApplicationDbContext context, User user)
+    {
+
+
+    var subscription = new WebhookSubscription
+    {
+        Id = Guid.NewGuid(),
+        UserId = user.Id,
+        Url = "https://example.com/webhook",
+        EventType = "test",
+        IsActive = true,
+        Secret = GenerateSecret(),
+        CreatedAt = DateTime.UtcNow
+    };
+
+    await context.WebhookSubscriptions.AddAsync(subscription);
+    await context.SaveChangesAsync();
+    
+      var deliveries = new List<WebhookDelivery>
+            {
+            new WebhookDelivery {
+                Id = Guid.NewGuid(),
+                SubscriptionId = subscription.Id,
+                Payload = JsonSerializer.Serialize(new { UserId = Guid.NewGuid(), UserName = "testuser" }),
+                Status = WebhookDeliveryStatus.Pending,
+                CreatedAt = DateTime.UtcNow
+            },
+            new WebhookDelivery {
+                Id = Guid.NewGuid(),
+                SubscriptionId = subscription.Id,
+                Payload = JsonSerializer.Serialize(new { UserId = Guid.NewGuid(), UserName = "testuser" }),
+                Status = WebhookDeliveryStatus.Pending,
+                CreatedAt = DateTime.UtcNow
+            }
+        };
+
+    await context.WebhookDeliveries.AddRangeAsync(deliveries);
+    await context.SaveChangesAsync();
+
+        return Tuple.Create(subscription, deliveries);
+    }
     private static string GenerateSecret()
     {
         byte[] bytes = new byte[32];

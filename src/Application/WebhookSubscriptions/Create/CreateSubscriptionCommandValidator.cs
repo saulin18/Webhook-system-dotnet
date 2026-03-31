@@ -1,7 +1,8 @@
-using Application.Webhooks.CreateSubscription;
+
+
 using FluentValidation;
 
-namespace Application.Webhooks.CreateSubscription;
+namespace Application.WebhookSubscriptions.Create;
 
 internal sealed class CreateSubscriptionCommandValidator : AbstractValidator<CreateSubscriptionCommand>
 {
