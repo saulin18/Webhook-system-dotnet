@@ -1,11 +1,8 @@
-using WebhookTests.Integration;
 using Xunit;
 using Domain.Users;
-using Infrastructure.Database;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Application.Abstractions.Authentication;
-using Domain.Users;
 
 namespace WebhookTests.Integration.Users;
 public sealed class LoginIntegrationTests : BaseIntegrationTest

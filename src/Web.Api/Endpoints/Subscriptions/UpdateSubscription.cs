@@ -4,9 +4,9 @@ using Application.Abstractions.Messaging;
 using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
-using Web.Api.Endpoints;
 using Domain.Users;
-namespace Web.Api.Endpoints.Webhooks;
+using Infrastructure.Authorization;
+namespace Web.Api.Endpoints.Subscriptions;
 
 
 internal sealed class UpdateSubscription : IEndpoint
@@ -23,7 +23,8 @@ internal sealed class UpdateSubscription : IEndpoint
 
             return result.Match(Results.Ok, CustomResults.Problem);
         })
-        .WithName(Permission.WebhooksUpdate)
+        .WithName("subscriptions.update")
+        .WithMetadata(new EndpointRequirementMetadata(Permission.WriteTheirOwnWebhooks))
         .WithTags(Tags.Webhooks)
         .RequireAuthorization(Permission.WriteTheirOwnWebhooks);
     }

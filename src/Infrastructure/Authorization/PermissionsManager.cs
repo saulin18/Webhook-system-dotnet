@@ -1,4 +1,3 @@
-using System;
 using System.Text.RegularExpressions;
 using Infrastructure.Authorization;
 using Microsoft.AspNetCore.Authorization;
@@ -33,7 +32,7 @@ public sealed class PermissionsManager
             return string.Empty;
         }
 
-        var parts = endpointName.Split('.');
+        string[] parts = endpointName.Split('.');
         if (parts.Length < 2)
         {
             return string.Empty;

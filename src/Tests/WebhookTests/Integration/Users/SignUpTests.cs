@@ -1,13 +1,6 @@
-using WebhookTests.Integration;
 using Domain.Users;
-using Application.Users;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
-using Application.Users.Register;
 using System.Net.Http.Json;
-using Microsoft.Extensions.DependencyInjection;
-using Infrastructure.Database;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
 

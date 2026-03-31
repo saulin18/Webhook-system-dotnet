@@ -2,17 +2,12 @@ using Domain.Webhooks;
 using Infrastructure.WebHookDispatcher;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using WebhookTests.Integration;
 using Xunit;
 
 namespace WebhookTests.Integration.Deliveries;
 
-public sealed class DispatchTest : BaseIntegrationTest
+public sealed class DispatchTest(WebhookIntegrationFixture fixture) : BaseIntegrationTest(fixture)
 {
-    public DispatchTest(WebhookIntegrationFixture fixture) : base(fixture)
-    {
-    }
-
     [Fact]
     public async Task Dispatch_WithValidData_ReturnsSuccess()
     {
@@ -23,25 +18,30 @@ public sealed class DispatchTest : BaseIntegrationTest
         };
 
        
-        var exampleSubscriptions = SeedingUtils.GetSeedingWebhookSubscriptions(Guid.NewGuid());
-        var subscription = exampleSubscriptions[0];
+        List<WebhookSubscription> exampleSubscriptions = SeedingUtils.GetSeedingWebhookSubscriptions(Guid.NewGuid());
+        WebhookSubscription subscription = exampleSubscriptions[0];
         subscription.Url = CustomWebApplicationFactory.TestWebhookReceiverUrl;
         await SeedingUtils.SeedSubscription(DbContext, subscription);
 
-        var dispatcher = Scope.ServiceProvider.GetRequiredService<WebHookDispatcherMassTransit>();
+        WebHookDispatcherMassTransit dispatcher = Scope.ServiceProvider.GetRequiredService<WebHookDispatcherMassTransit>();
         await dispatcher.DispatchAsync(requestBody.EventType, requestBody.payload);
 
-        // Give the bus and consumers time to process (async message → dispatcher → triggered consumer → HTTP → save)
+        // Give the bus and consumers time to process (async message → dispatcher → triggered consumer
+        // → HTTP → save)
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         WebhookDelivery? delivery = null;
-        var deadline = DateTime.UtcNow.AddSeconds(15);
+        DateTime deadline = DateTime.UtcNow.AddSeconds(15);
         while (DateTime.UtcNow < deadline)
         {
             delivery = await DbContext.WebhookDeliveries
                 .FirstOrDefaultAsync(d => d.EventType == requestBody.EventType);
             if (delivery is not null)
+            {
                 break;
+            }
+
+
             await Task.Delay(200);
         }
 

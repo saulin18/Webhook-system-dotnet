@@ -1,8 +1,7 @@
-
-using Domain.Webhooks;
 using Application.Abstractions.Messaging;
+using Domain.Webhooks;
 
-namespace Application.WebHookDeliveries;
+namespace Application.WebHookDeliveries.GetAll;
 
 public sealed record GetAllDeliveriesQuery(Guid? subscriptionId, 
 WebhookDeliveryStatus? status, string? cursor, int pageSize, string? eventType, 

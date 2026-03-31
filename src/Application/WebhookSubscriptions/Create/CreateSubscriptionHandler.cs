@@ -2,10 +2,11 @@ using System.Security.Cryptography;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
+using Application.Webhooks.CreateSubscription;
 using Domain.Webhooks;
 using SharedKernel;
 
-namespace Application.Webhooks.CreateSubscription;
+namespace Application.WebhookSubscriptions.Create;
 
 internal sealed class CreateSubscriptionHandler(
     IApplicationDbContext context, 
