@@ -1,31 +1,35 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
-using Domain.Webhooks;
-using Infrastructure.Database;
 using MassTransit;
-using Microsoft.Extensions.Configuration;
 
-namespace Infrastructure.WebHookDispatcher;
+using Webhooks.Processing.Domain.Webhooks;
+using IApplicationDbContext = Webhooks.Processing.Database.IApplicationDbContext;
+
+namespace Webhooks.Processing.Messaging;
 
 internal sealed class WebHookTriggeredConsumer(
     IHttpClientFactory httpClientFactory,
-    ApplicationDbContext dbContext,
+    IApplicationDbContext dbContext,
     IConfiguration configuration)
     : IConsumer<WebHookTriggeredEvent>
 {
     public async Task Consume(ConsumeContext<WebHookTriggeredEvent> context)
     {
-    
-        var message = context.Message;
+        WebHookTriggeredEvent message = context.Message;
+        string? parentActivityId = message.ActivityId;
 
-        var client = httpClientFactory.CreateClient("Webhooks");
+        using Activity? activity = DiagnosticConfig.Source.StartActivity(
+            "Processing Webhook Delivery", ActivityKind.Consumer, parentActivityId);
+        activity?.AddTag("EventType", (object)message.EventType);
 
-        // In test mode use the configured receiver URL so the test server can route the call in-process
-        var webhookUrl = configuration.GetValue<bool>("Testing:Enabled")
+        HttpClient client = httpClientFactory.CreateClient("Webhooks");
+
+        string webhookUrl = configuration.GetValue<bool>("Testing:Enabled")
             ? configuration["Testing:WebhookReceiverUrl"] ?? message.WebHookUrl
             : message.WebHookUrl;
 
-        var payload = new
+        object payload = new
         {
             message.EventType,
             message.Payload,
@@ -34,7 +38,7 @@ internal sealed class WebHookTriggeredConsumer(
             Id = Guid.NewGuid(),
         };
 
-        var payloadJson = JsonSerializer.Serialize(payload);
+        string payloadJson = JsonSerializer.Serialize(payload);
 
         using var content = new StringContent(payloadJson, Encoding.UTF8, "application/json");
         content.Headers.Add("X-Webhook-Secret", message.WebHookSecret);
@@ -52,7 +56,7 @@ internal sealed class WebHookTriggeredConsumer(
 
         try
         {
-            var response = await client.PostAsync(webhookUrl, content);
+            HttpResponseMessage response = await client.PostAsync(webhookUrl, content);
             response.EnsureSuccessStatusCode();
 
             delivery.Status = WebhookDeliveryStatus.Complete;
@@ -60,14 +64,11 @@ internal sealed class WebHookTriggeredConsumer(
 
             await dbContext.WebhookDeliveries.AddAsync(delivery);
             await dbContext.SaveChangesAsync();
-
         }
         catch (Exception e)
         {
-
             delivery.Status = WebhookDeliveryStatus.Failed;
             delivery.ErrorMessage = e.Message;
-
 
             await dbContext.WebhookDeliveries.AddAsync(delivery);
             await dbContext.SaveChangesAsync();

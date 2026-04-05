@@ -23,4 +23,8 @@
 	<InternalsVisibleTo Include="ArchitectureTests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Messaging\" />
+  </ItemGroup>
+
 </Project>

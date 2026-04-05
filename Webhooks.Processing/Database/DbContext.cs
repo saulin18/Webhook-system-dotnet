@@ -1,10 +1,8 @@
-﻿using Application.Abstractions.Data;
-using Domain.Users;
-using Domain.Webhooks;
 using Microsoft.EntityFrameworkCore;
+using Webhooks.Processing.Domain.Users;
+using Webhooks.Processing.Domain.Webhooks;
 
-
-namespace Infrastructure.Database;
+namespace Webhooks.Processing.Database;
 
 public sealed class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options)
@@ -20,16 +18,13 @@ public sealed class ApplicationDbContext(
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
-        modelBuilder.HasDefaultSchema(Schemas.Default);
+        modelBuilder.HasDefaultSchema("webhooks_processing");
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-
         int result = await base.SaveChangesAsync(cancellationToken);
-
 
         return result;
     }
-
 }

@@ -3,7 +3,7 @@ using Application.Abstractions.Messaging;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Scrutor;
-using SharedKernel;
+
 
 namespace Application;
 
