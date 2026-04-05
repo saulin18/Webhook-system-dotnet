@@ -5,22 +5,21 @@ using Infrastructure.Authentication;
 using Infrastructure.Authorization;
 using Infrastructure.Database;
 
-using Infrastructure.Messaging;
+
 using Infrastructure.Time;
-using Infrastructure.WebHookDispatcher;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.IdentityModel.JsonWebTokens;
+
 using Microsoft.IdentityModel.Tokens;
 using SharedKernel;
 using Polly;
 using Polly.Extensions.Http;
-using Infrastructure.WebHooDispatcher;
+
 
 namespace Infrastructure;
 
@@ -34,9 +33,9 @@ public static class DependencyInjection
             .AddDatabase(configuration)
             .AddHealthChecks(configuration)
             .AddAuthenticationInternal(configuration)
-            .AddAuthorizationInternal()
-            .AddMassTransit(configuration)
-            .AddWebhooks(configuration);
+            .AddAuthorizationInternal();
+           
+            
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {
@@ -112,32 +111,7 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IAsyncPolicy<HttpResponseMessage> AddRetryPolicy()
-    {
-        return HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
-            .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-    }
 
-    private static IAsyncPolicy<HttpResponseMessage> AddCircuitBreaker()
-    {
-        return HttpPolicyExtensions
-        .HandleTransientHttpError()
-        .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
-    }
 
-    private static IServiceCollection AddWebhooks(this IServiceCollection services, IConfiguration configuration)
-    {
-        var retryPolicy = AddRetryPolicy();
-        var circuitBreaker = AddCircuitBreaker();
-        services.AddHttpClient<WebhooksHttpClient>("Webhooks", (sp, client) =>
-                client.Timeout = TimeSpan.FromSeconds(configuration.GetValue<int>("Webhooks:TimeoutSeconds", 30)))
-            .SetHandlerLifetime(TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(retryPolicy)
-            .AddPolicyHandler(circuitBreaker);
-
-        services.AddScoped<WebHookDispatcherMassTransit>();
-        return services;
-    }
+   
 }

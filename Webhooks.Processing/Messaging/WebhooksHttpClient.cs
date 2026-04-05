@@ -1,11 +1,8 @@
-using System.Net.Http;
-namespace Infrastructure.WebHooDispatcher;
 
-public sealed class WebhooksHttpClient
+namespace Webhooks.Processing.Messaging;
+
+public sealed class WebhooksHttpClient(HttpClient http)
 {
-    private readonly HttpClient http;
-    public WebhooksHttpClient(HttpClient http) => this.http = http;
-
     public Task<HttpResponseMessage> PostWebhookAsync(string url, HttpContent content, CancellationToken ct = default)
         => http.PostAsync(url, content, ct);
 
